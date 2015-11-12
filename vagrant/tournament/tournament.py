@@ -71,7 +71,10 @@ def playerStandings():
     """
     db = connect()
     c = db.cursor()
-    c.execute("SELECT players.id, players.name, count(matches.winner) AS wins, count(*) AS matches FROM players LEFT JOIN matches ON (players.id = matches.winner) GROUP BY players.id, players.name ORDER BY wins DESC;")
+    c.execute("SELECT records.id, players.name, records.wins AS wins, sum(records.wins + records.losses) AS matches FROM (SELECT players.id AS id, count(m1.winner) AS wins, count(m2.loser) AS losses FROM players LEFT JOIN matches m1 ON players.id = m1.winner LEFT JOIN matches m2 ON players.id = m2.loser GROUP BY players.id) records JOIN players ON players.id = records.id GROUP BY records.id, players.name, records.wins ORDER BY records.wins desc;")
+    standing = c.fetchall()
+    db.close()
+    return standing
 
 
 def reportMatch(winner, loser):
@@ -81,6 +84,10 @@ def reportMatch(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
+    db = connect()
+    c = db.cursor()
+    c.execute("INSERT INTO matches (winner, loser) VALUES (%s, %s)", (winner, loser))
+    db.commit()
 
 
 def swissPairings():
